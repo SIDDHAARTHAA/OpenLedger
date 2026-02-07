@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@types/node": "^22.19.9",
     "@types/pg": "^8.16.0",
@@ -22,6 +22,7 @@
     "pg": "^8.17.2"
   },
   "exports": {
-    "./prisma": "./lib/prisma.ts"
+    "./prisma": "./lib/prisma.ts",
+    "./auth": "./auth/auth.ts"
   }
 }

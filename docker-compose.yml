@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:alpine
+    container_name: payflow_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword # Required to start the container
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
