@@ -8,14 +8,19 @@
     "start": "node dist/api/src/index.js"
   },
   "dependencies": {
-    "express": "^5.2.1",
-    "@openledger/db": "file:../shared/db"
+    "@openledger/db": "file:../shared/db",
+    "axios": "^1.13.5",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^4.17.21",
     "@types/node": "^20.0.0",
+    "nodemon": "^3.1.7",
     "tsx": "^4.0.0",
-    "nodemon": "^3.1.7"
+    "typescript": "^5.9.3"
   }
 }
