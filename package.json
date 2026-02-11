@@ -9,7 +9,10 @@
   ],
   "scripts": {
     "dev:api": "npm --workspace backend/api run dev",
-    "build": "npm --workspace frontend run build && npm --workspace backend/api run build"
+    "dev:app": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build && npm --workspace backend/api run build",
+    "start:app": "npm --workspace frontend start",
+    "start:api": "node backend/api/dist/index.js"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

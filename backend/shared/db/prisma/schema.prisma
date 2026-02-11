@@ -11,6 +11,19 @@ enum AuthProvider {
   EMAIL
 }
 
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id    String  @id @default(cuid())
   email String? @unique
@@ -20,6 +33,7 @@ model User {
 
   authAccounts AuthAccount[]
   sessions     Session[]
+  account      Account?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,4 +64,29 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model Account {
+  id      String @id @default(cuid())
+  userId  String @unique
+  balance BigInt @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id        String            @id @default(cuid())
+  accountId String
+  amount    BigInt
+  type      TransactionType
+  status    TransactionStatus
+  reference String?
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  createdAt DateTime @default(now())
 }
