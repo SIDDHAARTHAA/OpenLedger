@@ -1,7 +1,21 @@
+"use client";
+
 // frontend/app/page.tsx
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function HomePage() {
+
+  useEffect(() => {
+    // Check if we are in a popup
+    if (window.opener) {
+      // Send message to opener
+      window.opener.postMessage("login-success", "*");
+      // Close the popup
+      window.close();
+    }
+  }, []);
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Navbar */}
