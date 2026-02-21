@@ -5,7 +5,8 @@
     "frontend",
     "backend/api",
     "backend/workers",
-    "backend/shared/db"
+    "backend/shared/db",
+    "backend/bank-api"
   ],
   "scripts": {
     "dev:api": "npm --workspace backend/api run dev",
