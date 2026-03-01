@@ -23,7 +23,7 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
         const code = req.query.code as string | undefined;
 
         if (!code) {
-            return res.json(400).json({
+            return res.status(400).json({
                 error: "Missing code",
             });
         }

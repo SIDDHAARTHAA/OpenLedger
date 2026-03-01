@@ -1,11 +1,7 @@
 import { Router } from "express";
+import { depositTransaction } from "src/controller/transaction.controller.js";
 const router = Router();
 
-
-
-// router.get("/", getTransactions);
-// router.post("/deposit", depositTransaction);
-// router.post("/withdraw", withdrawTransaction);
-// router.post("/transfer", transferTransaction);
+router.post("/deposit", depositTransaction);
 
 export default router;

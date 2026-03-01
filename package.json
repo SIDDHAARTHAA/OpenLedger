@@ -10,10 +10,12 @@
   ],
   "scripts": {
     "dev:api": "npm --workspace backend/api run dev",
+    "dev:bank": "npm --workspace backend/bank-api run dev",
     "dev:app": "npm --workspace frontend run dev",
-    "build": "npm --workspace frontend run build && npm --workspace backend/api run build",
+    "build": "npm --workspace frontend run build && npm --workspace backend/api run build && npm --workspace backend/bank-api run build",
     "start:app": "npm --workspace frontend start",
-    "start:api": "node backend/api/dist/index.js"
+    "start:api": "node backend/api/dist/index.js",
+    "start:bank": "npm --workspace backend/bank-api run start"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

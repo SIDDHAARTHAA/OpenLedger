@@ -11,22 +11,45 @@ interface User {
     image: string | null;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+const formatBalance = (value: string) => {
+    const asNumber = Number(value);
+
+    if (!Number.isFinite(asNumber)) {
+        return value;
+    }
+
+    return asNumber.toLocaleString("en-IN");
+};
+
 export default function DashboardPage() {
     const [user, setUser] = useState<User | null>(null);
+    const [balance, setBalance] = useState("0");
     const [loading, setLoading] = useState(true);
+    const [depositAmount, setDepositAmount] = useState("");
+    const [depositing, setDepositing] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchUserAndBalance = async () => {
             try {
-                const res = await axios.get("http://localhost:4000/api/user/me", {
-                    withCredentials: true // Important for cookies
-                });
-                if (res.data.user) {
-                    setUser(res.data.user);
-                } else {
-                    router.push("/login"); // Redirect if not logged in
+                const [meRes, balanceRes] = await Promise.all([
+                    axios.get(`${API_BASE_URL}/api/user/me`, {
+                        withCredentials: true,
+                    }),
+                    axios.get(`${API_BASE_URL}/api/user/balance`, {
+                        withCredentials: true,
+                    }),
+                ]);
+
+                if (!meRes.data.user) {
+                    router.push("/login");
+                    return;
                 }
+
+                setUser(meRes.data.user);
+                setBalance(balanceRes.data.balance ?? "0");
             } catch (error) {
                 console.error("Failed to fetch user", error);
                 router.push("/login");
@@ -35,8 +58,41 @@ export default function DashboardPage() {
             }
         };
 
-        fetchUser();
+        fetchUserAndBalance();
     }, [router]);
+
+    const handleDeposit = async (event: React.FormEvent) => {
+        event.preventDefault();
+
+        if (!/^[1-9][0-9]*$/.test(depositAmount.trim())) {
+            alert("Enter a valid positive whole number.");
+            return;
+        }
+
+        setDepositing(true);
+
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/api/deposit`,
+                { amount: depositAmount.trim() },
+                { withCredentials: true }
+            );
+
+            const redirectUrl = response.data?.url as string | undefined;
+
+            if (!redirectUrl) {
+                alert("Bank redirect URL is missing.");
+                return;
+            }
+
+            window.location.href = redirectUrl;
+        } catch (error) {
+            console.error("Deposit initiation failed", error);
+            alert("Unable to initiate deposit right now.");
+        } finally {
+            setDepositing(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -60,7 +116,7 @@ export default function DashboardPage() {
                     <div className="p-6 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm">
                         <h2 className="text-gray-400 text-sm font-medium mb-2">Total Balance</h2>
                         <div className="text-4xl font-semibold text-white">
-                            ₹ 0.00
+                            ₹ {formatBalance(balance)}
                         </div>
                         <div className="mt-4 text-xs text-gray-500">
                             Available for transfer
@@ -80,6 +136,30 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div className="mt-8 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
+                    <h2 className="text-gray-300 text-sm font-medium mb-4">Add Balance</h2>
+
+                    <form onSubmit={handleDeposit} className="flex flex-col sm:flex-row gap-3">
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Enter amount"
+                            value={depositAmount}
+                            onChange={(event) => setDepositAmount(event.target.value)}
+                            className="flex-1 bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            disabled={depositing}
+                            className="px-6 py-3 bg-[#00B5EF] text-black text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {depositing ? "Redirecting..." : "Add"}
+                        </button>
+                    </form>
                 </div>
             </div>
         </main>

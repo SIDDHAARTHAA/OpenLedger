@@ -21,7 +21,7 @@ export const requireAuth = async (req: AuthenticateRequest, res: Response, next:
 
     if (!session || session.expiresAt < new Date()) {
         return res.status(401).json({
-            error: "Nice try"
+            error: "Unauthorized"
         });
     }
 

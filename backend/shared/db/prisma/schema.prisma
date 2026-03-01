@@ -84,9 +84,22 @@ model Transaction {
   amount    BigInt
   type      TransactionType
   status    TransactionStatus
-  reference String?
+  reference String?           @unique
 
   account Account @relation(fields: [accountId], references: [id])
+  processing Processing?
 
   createdAt DateTime @default(now())
+}
+
+model Processing {
+  id            String   @id @default(cuid())
+  bankToken     String   @unique
+  transactionId String   @unique
+  settledAt     DateTime?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
