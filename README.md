@@ -115,3 +115,52 @@ sequenceDiagram
         end
     end
 ```
+
+
+## Spend / Withdraw Architecture
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as User App Frontend
+    participant BE as User App Backend
+    participant DB as Database
+    participant Assets as Inbuilt Asset Catalog
+    participant Bank as Bank Settlement
+
+    Note over User,BE: STEP 1: Outflow Action
+    User->>FE: Chooses Withdraw or Buy Asset
+
+    alt Withdraw to Bank
+        FE->>BE: POST /api/withdraw { amount }
+        BE->>DB: Check account balance >= amount
+        BE->>DB: INSERT Transaction(type=WITHDRAW, status=PENDING)
+        BE->>DB: UPDATE Account balance -= amount
+        BE->>Bank: POST /api/bank/withdraw { ref, amount }
+        alt Bank accepts
+            Bank-->>BE: accepted + bank_reference
+            BE->>DB: UPDATE Transaction status=SUCCESS
+            BE-->>FE: Return updated balance
+            FE-->>User: Show successful withdrawal
+        else Bank fails
+            Bank-->>BE: reject/error
+            BE->>DB: UPDATE Transaction status=FAILED
+            BE->>DB: Refund balance += amount
+            BE-->>FE: Return failure
+            FE-->>User: Show withdrawal failed
+        end
+    else Buy Inbuilt Asset
+        FE->>BE: GET /api/assets/catalog
+        BE-->>FE: Return inbuilt assets
+        User->>FE: Clicks Buy on asset
+        FE->>BE: POST /api/assets/buy { assetId }
+        BE->>Assets: Resolve price + metadata
+        BE->>DB: Check account balance >= price
+        BE->>DB: INSERT Transaction(type=TRANSFER_OUT, status=SUCCESS)
+        BE->>DB: INSERT AssetPurchase(userId, assetId, transactionId)
+        BE->>DB: UPDATE Account balance -= price
+        BE-->>FE: Return purchase + updated balance
+        FE-->>User: Show owned asset + new balance
+    end
+```

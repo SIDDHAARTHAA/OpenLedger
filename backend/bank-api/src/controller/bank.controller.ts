@@ -58,6 +58,25 @@ export const createOrder = (req: Request, res: Response) => {
   });
 };
 
+export const registerWithdrawal = (req: Request, res: Response) => {
+  const ref = req.body?.ref as string | undefined;
+  const rawAmount = req.body?.amount;
+  const amount = parseAmount(rawAmount);
+
+  if (!ref || amount === null) {
+    return res.status(400).json({
+      error: "Missing or invalid ref/amount",
+    });
+  }
+
+  const bankReference = `bank_wdr_${crypto.randomBytes(8).toString("hex")}`;
+
+  return res.status(201).json({
+    accepted: true,
+    bank_reference: bankReference,
+  });
+};
+
 export const renderApprovalPage = (req: Request, res: Response) => {
   const token = req.query.token as string | undefined;
 

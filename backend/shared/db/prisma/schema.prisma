@@ -34,6 +34,7 @@ model User {
   authAccounts AuthAccount[]
   sessions     Session[]
   account      Account?
+  assetPurchases AssetPurchase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,6 +89,7 @@ model Transaction {
 
   account Account @relation(fields: [accountId], references: [id])
   processing Processing?
+  assetPurchase AssetPurchase?
 
   createdAt DateTime @default(now())
 }
@@ -102,4 +104,22 @@ model Processing {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AssetPurchase {
+  id            String @id @default(cuid())
+  userId        String
+  transactionId String @unique
+
+  assetId   String
+  assetName String
+  price     BigInt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, assetId])
+  @@index([userId, createdAt])
 }
