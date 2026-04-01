@@ -1,50 +1,58 @@
-"use client"
+"use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 
-interface User {
+type User = {
     id: string;
     email: string;
     name: string | null;
     image: string | null;
-}
+    role: "VIEWER" | "ANALYST" | "ADMIN";
+    status: "ACTIVE" | "INACTIVE";
+};
 
-interface CatalogAsset {
+type DashboardSummary = {
+    totals: {
+        income: string;
+        expenses: string;
+        netBalance: string;
+        recordCount: number;
+    };
+    categoryTotals: Array<{
+        category: string;
+        income: string;
+        expenses: string;
+        net: string;
+    }>;
+    recentActivity: Array<{
+        id: string;
+        amount: string;
+        type: "INCOME" | "EXPENSE";
+        category: string;
+        entryDate: string;
+        notes: string | null;
+        createdAt: string;
+    }>;
+};
+
+type RecordItem = {
     id: string;
-    name: string;
-    description: string;
-    price: string;
-}
-
-interface OwnedAsset {
-    assetId: string;
-    assetName: string;
-    price: string;
-    createdAt: string;
-    transactionRef: string | null;
-}
-
-interface LedgerTransaction {
-    id: string;
-    type: string;
-    status: string;
     amount: string;
-    reference: string | null;
+    type: "INCOME" | "EXPENSE";
+    category: string;
+    entryDate: string;
+    notes: string | null;
     createdAt: string;
-}
+    updatedAt: string;
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-const formatBalance = (value: string) => {
-    const asNumber = Number(value);
-
-    if (!Number.isFinite(asNumber)) {
-        return value;
-    }
-
-    return asNumber.toLocaleString("en-IN");
+const formatAmount = (value: string) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed.toLocaleString("en-IN") : value;
 };
 
 const parseErrorMessage = (error: unknown, fallback: string) => {
@@ -59,137 +67,52 @@ const parseErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function DashboardPage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [balance, setBalance] = useState("0");
-    const [assets, setAssets] = useState<CatalogAsset[]>([]);
-    const [ownedAssets, setOwnedAssets] = useState<OwnedAsset[]>([]);
-    const [recentTransactions, setRecentTransactions] = useState<LedgerTransaction[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const [depositAmount, setDepositAmount] = useState("");
-    const [depositing, setDepositing] = useState(false);
-
-    const [withdrawAmount, setWithdrawAmount] = useState("");
-    const [withdrawing, setWithdrawing] = useState(false);
-
-    const [buyingAssetId, setBuyingAssetId] = useState<string | null>(null);
-
     const router = useRouter();
-
-    const loadDashboard = async () => {
-        const [meRes, balanceRes, catalogRes, ownedRes, transactionRes] = await Promise.all([
-            axios.get(`${API_BASE_URL}/api/user/me`, { withCredentials: true }),
-            axios.get(`${API_BASE_URL}/api/user/balance`, { withCredentials: true }),
-            axios.get(`${API_BASE_URL}/api/assets/catalog`, { withCredentials: true }),
-            axios.get(`${API_BASE_URL}/api/assets/my`, { withCredentials: true }),
-            axios.get(`${API_BASE_URL}/api/transaction`, { withCredentials: true }),
-        ]);
-
-        if (!meRes.data.user) {
-            router.push("/login");
-            return;
-        }
-
-        setUser(meRes.data.user);
-        setBalance(balanceRes.data.balance ?? "0");
-        setAssets(Array.isArray(catalogRes.data.assets) ? catalogRes.data.assets : []);
-        setOwnedAssets(Array.isArray(ownedRes.data.purchases) ? ownedRes.data.purchases : []);
-        setRecentTransactions(Array.isArray(transactionRes.data.transactions) ? transactionRes.data.transactions : []);
-    };
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [summary, setSummary] = useState<DashboardSummary | null>(null);
+    const [records, setRecords] = useState<RecordItem[]>([]);
+    const [recordsError, setRecordsError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchDashboard = async () => {
+        const loadDashboard = async () => {
             try {
-                await loadDashboard();
+                const [meRes, summaryRes] = await Promise.all([
+                    axios.get(`${API_BASE_URL}/api/users/me`, { withCredentials: true }),
+                    axios.get(`${API_BASE_URL}/api/dashboard/summary`, { withCredentials: true }),
+                ]);
+
+                setUser(meRes.data.user ?? null);
+                setSummary(summaryRes.data ?? null);
+
+                try {
+                    const recordsRes = await axios.get(`${API_BASE_URL}/api/records?pageSize=10`, {
+                        withCredentials: true,
+                    });
+
+                    setRecords(Array.isArray(recordsRes.data.records) ? recordsRes.data.records : []);
+                    setRecordsError(null);
+                } catch (error) {
+                    setRecords([]);
+                    setRecordsError(parseErrorMessage(error, "Unable to load records."));
+                }
             } catch (error) {
-                console.error("Failed to fetch dashboard", error);
+                console.error("Failed to load dashboard", error);
                 router.push("/login");
+                return;
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDashboard();
+        loadDashboard();
     }, [router]);
 
-    const handleDeposit = async (event: React.FormEvent) => {
-        event.preventDefault();
-
-        if (!/^[1-9][0-9]*$/.test(depositAmount.trim())) {
-            alert("Enter a valid positive whole number.");
-            return;
-        }
-
-        setDepositing(true);
-
+    const handleLogout = async () => {
         try {
-            const response = await axios.post(
-                `${API_BASE_URL}/api/deposit`,
-                { amount: depositAmount.trim() },
-                { withCredentials: true }
-            );
-
-            const redirectUrl = response.data?.url as string | undefined;
-
-            if (!redirectUrl) {
-                alert("Bank redirect URL is missing.");
-                return;
-            }
-
-            window.location.href = redirectUrl;
-        } catch (error) {
-            console.error("Deposit initiation failed", error);
-            alert("Unable to initiate deposit right now.");
+            await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
         } finally {
-            setDepositing(false);
-        }
-    };
-
-    const handleWithdraw = async (event: React.FormEvent) => {
-        event.preventDefault();
-
-        if (!/^[1-9][0-9]*$/.test(withdrawAmount.trim())) {
-            alert("Enter a valid positive whole number.");
-            return;
-        }
-
-        setWithdrawing(true);
-
-        try {
-            const response = await axios.post(
-                `${API_BASE_URL}/api/withdraw`,
-                { amount: withdrawAmount.trim() },
-                { withCredentials: true }
-            );
-
-            setBalance(response.data?.balance ?? balance);
-            setWithdrawAmount("");
-            await loadDashboard();
-        } catch (error) {
-            console.error("Withdraw failed", error);
-            alert(parseErrorMessage(error, "Unable to withdraw right now."));
-        } finally {
-            setWithdrawing(false);
-        }
-    };
-
-    const handleBuyAsset = async (assetId: string) => {
-        setBuyingAssetId(assetId);
-
-        try {
-            const response = await axios.post(
-                `${API_BASE_URL}/api/assets/buy`,
-                { assetId },
-                { withCredentials: true }
-            );
-
-            setBalance(response.data?.balance ?? balance);
-            await loadDashboard();
-        } catch (error) {
-            console.error("Asset purchase failed", error);
-            alert(parseErrorMessage(error, "Unable to purchase this asset."));
-        } finally {
-            setBuyingAssetId(null);
+            router.push("/login");
         }
     };
 
@@ -201,160 +124,157 @@ export default function DashboardPage() {
         );
     }
 
-    if (!user) return null;
-
-    const ownedSet = new Set(ownedAssets.map((asset) => asset.assetId));
+    if (!user || !summary) {
+        return null;
+    }
 
     return (
         <main className="min-h-screen p-8">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold text-white mb-8 font-[var(--font-plex)]">
-                    Dashboard
-                </h1>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Balance Card */}
-                    <div className="p-6 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm">
-                        <h2 className="text-gray-400 text-sm font-medium mb-2">Total Balance</h2>
-                        <div className="text-4xl font-semibold text-white">
-                            ₹ {formatBalance(balance)}
-                        </div>
-                        <div className="mt-4 text-xs text-gray-500">
-                            Available for transfer
-                        </div>
+            <div className="max-w-5xl mx-auto space-y-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white font-[var(--font-plex)]">
+                            Finance Dashboard
+                        </h1>
+                        <p className="mt-2 text-sm text-gray-400">
+                            Signed in as {user.name || user.email} · {user.role} · {user.status}
+                        </p>
                     </div>
 
-                    {/* User Details Card */}
-                    <div className="p-6 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm">
-                        <h2 className="text-gray-400 text-sm font-medium mb-4">Profile</h2>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-[#00B5EF] flex items-center justify-center text-black font-bold text-xl">
-                                {user.name ? user.name[0].toUpperCase() : user.email[0].toUpperCase()}
-                            </div>
-                            <div>
-                                <div className="text-white font-medium">{user.name || "User"}</div>
-                                <div className="text-gray-400 text-sm">{user.email}</div>
-                            </div>
+                    <button
+                        onClick={handleLogout}
+                        className="px-4 py-2 border border-white/20 text-white text-sm hover:bg-white/10 transition-colors"
+                    >
+                        Logout
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-5">
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Income</div>
+                        <div className="mt-2 text-3xl font-semibold text-white">
+                            ₹ {formatAmount(summary.totals.income)}
+                        </div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-5">
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Expenses</div>
+                        <div className="mt-2 text-3xl font-semibold text-white">
+                            ₹ {formatAmount(summary.totals.expenses)}
+                        </div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-5">
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Net Balance</div>
+                        <div className="mt-2 text-3xl font-semibold text-white">
+                            ₹ {formatAmount(summary.totals.netBalance)}
+                        </div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-5">
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Records</div>
+                        <div className="mt-2 text-3xl font-semibold text-white">
+                            {summary.totals.recordCount}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
-                        <h2 className="text-gray-300 text-sm font-medium mb-4">Add Balance</h2>
-
-                        <form onSubmit={handleDeposit} className="flex flex-col sm:flex-row gap-3">
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                placeholder="Enter amount"
-                                value={depositAmount}
-                                onChange={(event) => setDepositAmount(event.target.value)}
-                                className="flex-1 bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={depositing}
-                                className="px-6 py-3 bg-[#00B5EF] text-black text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {depositing ? "Redirecting..." : "Add"}
-                            </button>
-                        </form>
-                    </div>
-
-                    <div className="border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
-                        <h2 className="text-gray-300 text-sm font-medium mb-4">Withdraw To Bank</h2>
-
-                        <form onSubmit={handleWithdraw} className="flex flex-col sm:flex-row gap-3">
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                placeholder="Enter amount"
-                                value={withdrawAmount}
-                                onChange={(event) => setWithdrawAmount(event.target.value)}
-                                className="flex-1 bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={withdrawing}
-                                className="px-6 py-3 border border-[#00B5EF] text-[#00B5EF] text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {withdrawing ? "Processing..." : "Withdraw"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div className="mt-8 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
-                    <h2 className="text-gray-300 text-sm font-medium mb-4">Inbuilt Asset Store</h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {assets.map((asset) => {
-                            const owned = ownedSet.has(asset.id);
-                            const buying = buyingAssetId === asset.id;
-
-                            return (
-                                <div key={asset.id} className="border border-white/10 rounded-lg p-4">
-                                    <div className="text-white font-medium">{asset.name}</div>
-                                    <div className="text-white/60 text-sm mt-1">{asset.description}</div>
-                                    <div className="mt-3 text-[#00B5EF] font-medium">₹ {formatBalance(asset.price)}</div>
-                                    <button
-                                        type="button"
-                                        disabled={owned || buyingAssetId !== null}
-                                        onClick={() => handleBuyAsset(asset.id)}
-                                        className="mt-4 px-4 py-2 text-sm border border-[#00B5EF] text-[#00B5EF] disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {owned ? "Owned" : buying ? "Buying..." : "Buy Now"}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
-                        <h2 className="text-gray-300 text-sm font-medium mb-4">Owned Assets</h2>
-                        <div className="space-y-3">
-                            {ownedAssets.length === 0 ? (
-                                <div className="text-white/60 text-sm">No purchases yet.</div>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+                        <h2 className="text-lg font-semibold text-white">Category Totals</h2>
+                        <div className="mt-4 space-y-3">
+                            {summary.categoryTotals.length === 0 ? (
+                                <p className="text-sm text-gray-400">No records yet.</p>
                             ) : (
-                                ownedAssets.map((asset) => (
-                                    <div key={asset.assetId} className="border border-white/10 rounded-lg p-3">
-                                        <div className="text-white text-sm font-medium">{asset.assetName}</div>
-                                        <div className="text-white/60 text-xs mt-1">
-                                            ₹ {formatBalance(asset.price)} • {new Date(asset.createdAt).toLocaleString()}
+                                summary.categoryTotals.map((item) => (
+                                    <div key={item.category} className="rounded-md border border-white/10 p-4">
+                                        <div className="font-medium text-white">{item.category}</div>
+                                        <div className="mt-2 text-sm text-gray-300">
+                                            Income: ₹ {formatAmount(item.income)}
+                                        </div>
+                                        <div className="text-sm text-gray-300">
+                                            Expenses: ₹ {formatAmount(item.expenses)}
+                                        </div>
+                                        <div className="text-sm text-gray-300">
+                                            Net: ₹ {formatAmount(item.net)}
                                         </div>
                                     </div>
                                 ))
                             )}
                         </div>
-                    </div>
+                    </section>
 
-                    <div className="border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm p-6">
-                        <h2 className="text-gray-300 text-sm font-medium mb-4">Recent Transactions</h2>
-                        <div className="space-y-3">
-                            {recentTransactions.length === 0 ? (
-                                <div className="text-white/60 text-sm">No transactions yet.</div>
+                    <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+                        <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+                        <div className="mt-4 space-y-3">
+                            {summary.recentActivity.length === 0 ? (
+                                <p className="text-sm text-gray-400">No recent activity.</p>
                             ) : (
-                                recentTransactions.slice(0, 8).map((txn) => (
-                                    <div key={txn.id} className="border border-white/10 rounded-lg p-3">
-                                        <div className="text-white text-sm font-medium">
-                                            {txn.type} • {txn.status}
+                                summary.recentActivity.map((record) => (
+                                    <div key={record.id} className="rounded-md border border-white/10 p-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="font-medium text-white">{record.category}</div>
+                                            <div className="text-sm text-white">
+                                                {record.type === "INCOME" ? "+" : "-"}₹ {formatAmount(record.amount)}
+                                            </div>
                                         </div>
-                                        <div className="text-white/60 text-xs mt-1">
-                                            ₹ {formatBalance(txn.amount)} • {txn.reference ?? "no-ref"}
+                                        <div className="mt-1 text-sm text-gray-400">
+                                            {new Date(record.entryDate).toLocaleDateString("en-IN")}
                                         </div>
+                                        {record.notes ? (
+                                            <div className="mt-2 text-sm text-gray-300">{record.notes}</div>
+                                        ) : null}
                                     </div>
                                 ))
                             )}
                         </div>
-                    </div>
+                    </section>
                 </div>
+
+                <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+                    <div className="flex items-center justify-between gap-4">
+                        <h2 className="text-lg font-semibold text-white">Latest Records</h2>
+                        {recordsError ? (
+                            <span className="text-sm text-amber-300">{recordsError}</span>
+                        ) : null}
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto">
+                        <table className="min-w-full text-left text-sm">
+                            <thead className="text-gray-400">
+                                <tr>
+                                    <th className="px-3 py-2 font-medium">Date</th>
+                                    <th className="px-3 py-2 font-medium">Type</th>
+                                    <th className="px-3 py-2 font-medium">Category</th>
+                                    <th className="px-3 py-2 font-medium">Amount</th>
+                                    <th className="px-3 py-2 font-medium">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-3 py-4 text-gray-400">
+                                            No record data available for this role yet.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    records.map((record) => (
+                                        <tr key={record.id} className="border-t border-white/10">
+                                            <td className="px-3 py-3 text-gray-200">
+                                                {new Date(record.entryDate).toLocaleDateString("en-IN")}
+                                            </td>
+                                            <td className="px-3 py-3 text-gray-200">{record.type}</td>
+                                            <td className="px-3 py-3 text-gray-200">{record.category}</td>
+                                            <td className="px-3 py-3 text-gray-200">
+                                                ₹ {formatAmount(record.amount)}
+                                            </td>
+                                            <td className="px-3 py-3 text-gray-400">
+                                                {record.notes || "—"}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </main>
     );

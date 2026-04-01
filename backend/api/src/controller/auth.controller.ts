@@ -134,7 +134,8 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        return res.redirect(process.env.FRONTEND_URL!)
+        const frontendUrl = (process.env.FRONTEND_URL ?? "http://localhost:3000").replace(/\/$/, "");
+        return res.redirect(`${frontendUrl}/me`)
     } catch (err) {
         console.error("Google auth callback failure", err);
         return res.status(500).json({

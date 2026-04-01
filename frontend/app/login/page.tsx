@@ -4,6 +4,8 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
 const parseErrorMessage = (error: unknown, fallback: string) => {
     if (axios.isAxiosError(error)) {
         const message = error.response?.data?.error;
@@ -23,25 +25,7 @@ export default function LoginPage() {
 
     const handleGoogleLogin = (e: React.MouseEvent) => {
         e.preventDefault();
-        const width = 500;
-        const height = 600;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-
-        const popup = window.open(
-            "http://localhost:4000/api/auth/google",
-            "Google Login",
-            `width=${width},height=${height},left=${left},top=${top}`
-        );
-
-        const messageHandler = (event: MessageEvent) => {
-            if (event.data === "login-success") {
-                window.removeEventListener("message", messageHandler);
-                router.push("/me");
-            }
-        };
-
-        window.addEventListener("message", messageHandler);
+        window.location.href = `${API_BASE_URL}/api/auth/google`;
     };
 
     const handleEmailLogin = async (e: React.FormEvent) => {
@@ -49,7 +33,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await axios.post(
-                "http://localhost:4000/api/auth/login",
+                `${API_BASE_URL}/api/auth/login`,
                 { email, password },
                 { withCredentials: true }
             );
