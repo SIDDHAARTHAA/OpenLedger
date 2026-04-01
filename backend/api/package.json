@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon --watch src --exec tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/api/src/index.js"
+    "start": "node --import tsx src/index.ts"
   },
   "dependencies": {
     "@openledger/db": "file:../shared/db",
