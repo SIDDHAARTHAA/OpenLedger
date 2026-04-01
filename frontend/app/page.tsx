@@ -1,21 +1,6 @@
-"use client";
-
-// frontend/app/page.tsx
 import Link from "next/link";
-import { useEffect } from "react";
 
 export default function HomePage() {
-
-  useEffect(() => {
-    // Check if we are in a popup
-    if (window.opener) {
-      // Send message to opener
-      window.opener.postMessage("login-success", "*");
-      // Close the popup
-      window.close();
-    }
-  }, []);
-
   return (
     <main className="min-h-screen flex flex-col">
       {/* Navbar */}
@@ -40,13 +25,13 @@ export default function HomePage() {
       {/* Hero */}
       <section className="flex-1 flex flex-col justify-center px-8 max-w-5xl">
         <h1 className="text-5xl font-semibold leading-tight font-[var(--font-plex)]">
-          Banking, rebuilt for
-          <span className="text-[#00B5EF]"> developers</span>
+          Finance backends,
+          <span className="text-[#00B5EF]"> built to explain themselves</span>
         </h1>
 
         <p className="mt-6 text-white/70 max-w-xl">
-          A modern digital wallet with strong security, clean infrastructure,
-          and transparent systems.
+          A role-based finance dashboard backend with clean records APIs,
+          summary analytics, and reviewer-friendly documentation.
         </p>
 
         <div className="mt-10 flex gap-4">

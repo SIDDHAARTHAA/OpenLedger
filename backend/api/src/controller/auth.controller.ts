@@ -99,9 +99,6 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
                             providerAccountId: sub,
                         },
                     },
-                    account: {
-                        create: {},
-                    },
                 },
             });
 
@@ -238,9 +235,6 @@ export const emailSignup = async (req: Request, res: Response) => {
                     providerAccountId: email,
                     passwordHash,
                 },
-            },
-            account: {
-                create: {},
             },
         },
     });

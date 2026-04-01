@@ -155,9 +155,6 @@ export const createUser = async (req: AuthenticateRequest, res: Response) => {
                     passwordHash,
                 },
             },
-            account: {
-                create: {},
-            },
         },
         select: userSelect,
     });
@@ -259,28 +256,5 @@ export const updateUser = async (req: AuthenticateRequest, res: Response) => {
 
     return res.json({
         user: updatedUser,
-    });
-};
-
-export const getBalance = async (req: AuthenticateRequest, res: Response) => {
-    const userId = req.userId!;
-
-    const account = await db.account.findUnique({
-        where: {
-            userId
-        },
-        select: {
-            balance: true
-        },
-    });
-
-    if (!account) {
-        return res.status(404).json({
-            error: "Account not found"
-        });
-    }
-
-    return res.json({
-        balance: account.balance.toString(),
     });
 };

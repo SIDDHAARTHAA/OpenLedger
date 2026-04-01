@@ -12,7 +12,7 @@ const plex = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "OpenLedger",
-  description: "Modern digital banking",
+  description: "Finance dashboard backend assessment project",
 };
 
 export default function RootLayout({

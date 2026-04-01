@@ -37,7 +37,7 @@ The first signed-up user is automatically promoted to `ADMIN` so the system can 
 
 ## Data Model
 
-![Prisma schema diagram](./prisma_schema_design.png)
+![Prisma schema diagram](./prisma_schema_design.svg)
 
 ### User
 
@@ -206,16 +206,16 @@ curl http://localhost:4000/api/docs.json
 ## Assumptions and Tradeoffs
 
 - email and password authentication is the primary path for the assessment
-- Google OAuth remains in the codebase from the original project, but it is optional
+- Google OAuth is included as an optional enhancement on top of email/password auth
 - amounts use integer smallest units instead of decimals to keep arithmetic explicit
 - record trend aggregation is computed in application logic for clarity
-- legacy wallet and asset flows from the original repo are still present in source, but the assignment-relevant API surface is the one documented above
+- sample seed data is included to make dashboard totals and trends easier to review quickly
 
 ## Verification
 
 Verified locally on this branch:
 
 - `npm --workspace backend/shared/db run prisma:generate`
+- `npm --workspace backend/shared/db run prisma:migrate`
 - `npm --workspace backend/shared/db run seed:dashboard`
 - `npm --workspace backend/api run build`
-- `npm --workspace backend/bank-api run build`
