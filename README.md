@@ -61,6 +61,8 @@ Amounts are stored as integer smallest units for simplicity.
 
 Machine-readable docs are available at `GET /api/docs.json`, and a lightweight browser page is available at `GET /api/docs`.
 
+Static GitHub Pages documentation is also included under [`docs/`](./docs/) for easy public hosting.
+
 ### Auth
 
 - `POST /api/auth/signup`
@@ -193,6 +195,18 @@ curl http://localhost:4000/api/dashboard/summary?from=2026-01-01&to=2026-12-31 \
 ```bash
 curl http://localhost:4000/api/docs.json
 ```
+
+### GitHub Pages docs
+
+The repository includes a static Swagger UI in [`docs/index.html`](./docs/index.html) backed by [`docs/openapi.json`](./docs/openapi.json).
+
+To publish it with GitHub Pages:
+
+1. Push the branch to GitHub.
+2. Open repository `Settings` -> `Pages`.
+3. Choose `Deploy from a branch`.
+4. Select your submission branch and the `/docs` folder.
+5. Use the generated GitHub Pages URL as the API documentation link in the submission form.
 
 ## Validation and Access Rules
 
