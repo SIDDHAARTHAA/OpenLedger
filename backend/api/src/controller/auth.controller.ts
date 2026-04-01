@@ -72,7 +72,7 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
 
         //db transaction: user + auth account
         const bootstrapRole = await getBootstrapRole();
-        const user = await db.$transaction(async (tx) => {
+        const user = await db.$transaction(async (tx: any) => {
             const existingAccount = await tx.authAccount.findUnique({
                 where: {
                     provider_providerAccountId: {
@@ -107,6 +107,11 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
 
         });
 
+        if (user.status !== "ACTIVE") {
+            return res.status(403).json({
+                error: "User account is inactive"
+            });
+        }
 
         //create session
         const sessionId = crypto.randomBytes(32).toString("hex");
@@ -257,4 +262,24 @@ export const emailSignup = async (req: Request, res: Response) => {
     });
 
     return res.status(201).json({ user });
+};
+
+export const logout = async (req: Request, res: Response) => {
+    const sessionId = req.cookies?.session_id;
+
+    if (sessionId) {
+        await db.session.deleteMany({
+            where: {
+                id: sessionId,
+            },
+        });
+    }
+
+    res.clearCookie("session_id", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+    });
+
+    return res.status(204).send();
 };

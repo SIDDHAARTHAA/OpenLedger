@@ -55,7 +55,7 @@ export const listMyAssets = async (req: AuthenticateRequest, res: Response) => {
   });
 
   return res.json({
-    purchases: purchases.map((purchase) => ({
+    purchases: purchases.map((purchase: (typeof purchases)[number]) => ({
       assetId: purchase.assetId,
       assetName: purchase.assetName,
       price: purchase.price.toString(),
@@ -84,7 +84,7 @@ export const buyAsset = async (req: AuthenticateRequest, res: Response) => {
   }
 
   try {
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: any) => {
       const account = await tx.account.findUnique({
         where: { userId },
         select: { id: true },

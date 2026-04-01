@@ -86,7 +86,7 @@ export const depositTransaction = async (req: AuthenticateRequest, res: Response
       return res.status(502).json({ error: "Bank API did not return a bank token." });
     }
 
-    await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx: any) => {
       const transaction = await tx.transaction.create({
         data: {
           accountId: account.id,
@@ -157,7 +157,7 @@ export const bankWebhook = async (req: Request, res: Response) => {
     return res.json({ ok: true, alreadySettled: true });
   }
 
-  const settled = await db.$transaction(async (tx) => {
+  const settled = await db.$transaction(async (tx: any) => {
     const updated = await tx.transaction.updateMany({
       where: {
         id: processing.transaction.id,
@@ -217,7 +217,7 @@ export const withdrawTransaction = async (req: AuthenticateRequest, res: Respons
     | null = null;
 
   try {
-    pendingWithdraw = await db.$transaction(async (tx) => {
+    pendingWithdraw = await db.$transaction(async (tx: any) => {
       const account = await tx.account.findUnique({
         where: { userId },
         select: { id: true },
@@ -281,6 +281,10 @@ export const withdrawTransaction = async (req: AuthenticateRequest, res: Respons
       throw new TransactionError("Bank rejected withdrawal request.", 502);
     }
 
+    if (!pendingWithdraw) {
+      throw new TransactionError("Unable to finalize withdrawal.", 500);
+    }
+
     await db.transaction.update({
       where: { id: pendingWithdraw.transactionId },
       data: { status: "SUCCESS" },
@@ -295,7 +299,7 @@ export const withdrawTransaction = async (req: AuthenticateRequest, res: Respons
     if (pendingWithdraw) {
       const failedWithdraw = pendingWithdraw;
 
-      await db.$transaction(async (tx) => {
+      await db.$transaction(async (tx: any) => {
         const reverted = await tx.transaction.updateMany({
           where: {
             id: failedWithdraw.transactionId,
@@ -357,7 +361,7 @@ export const getTransactions = async (req: AuthenticateRequest, res: Response) =
   });
 
   return res.json({
-    transactions: transactions.map((txn) => ({
+    transactions: transactions.map((txn: (typeof transactions)[number]) => ({
       ...txn,
       amount: txn.amount.toString(),
     })),

@@ -1,8 +1,8 @@
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
-import type { PrismaClient as PrismaClientType } from './prisma-client.js';
-import { PrismaClient } from './prisma-client.js';
+import { PrismaClient } from '@prisma/client';
+import type { PrismaClient as PrismaClientType } from '@prisma/client';
 
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
