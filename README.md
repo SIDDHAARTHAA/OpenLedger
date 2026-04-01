@@ -1,166 +1,198 @@
-## Auth Architecture
-```mermaid
-    sequenceDiagram
-    autonumber
-    actor User
-    participant FE as Next.js Frontend
-    participant BE as Express Backend
-    participant Google as Google OAuth Server
-    participant DB as PostgreSQL (Prisma)
+# Zorvyn Finance Data Processing and Access Control Backend
 
-    Note over User,Google: STEP 1 — Authorization Request
+This branch adapts the existing repo into a backend assignment for a finance dashboard system with role-based access control.
 
-    User->>FE: Click "Continue with Google"
-    FE->>BE: GET /api/auth/google
-    BE->>Google: Redirect to Google OAuth (client_id, redirect_uri, scope)
-    Google->>User: Show Google Login + Consent
-    User->>Google: Approves Login
+The backend now focuses on:
 
-    Note over Google,BE: STEP 2 — Authorization Code Grant
+- user management with roles and active or inactive status
+- role-based permissions for viewers, analysts, and admins
+- financial record CRUD with filtering
+- dashboard summary and trend APIs
+- session-based authentication with email login and signup
 
-    Google->>BE: Redirect /api/auth/google/callback?code=AUTH_CODE
+## Stack
 
-    rect rgb(30, 30, 30)
-        Note right of BE: Secure Server-to-Server Exchange
-        BE->>Google: POST /token (code → access_token)
-        Google-->>BE: Returns access_token
-        BE->>Google: GET /userinfo (Bearer access_token)
-        Google-->>BE: Returns { sub, email, name, picture }
-    end
+- Node.js
+- Express
+- Prisma
+- PostgreSQL
+- TypeScript
 
-    Note over BE,DB: STEP 3 — Identity Resolution
+## Role Model
 
-    BE->>DB: Find AuthAccount(provider=GOOGLE, sub)
-    
-    alt Existing Account
-        DB-->>BE: Return existing User
-    else New User
-        BE->>DB: Create User
-        BE->>DB: Create AuthAccount(GOOGLE, sub)
-    end
+- `VIEWER`
+  Can access dashboard summaries and trends.
+- `ANALYST`
+  Can read financial records and dashboard insights.
+- `ADMIN`
+  Can manage users and perform full financial record CRUD.
 
-    rect rgb(40, 44, 52)
-        Note right of BE: Session Creation
-        BE->>DB: INSERT Session (session_id, userId, expiresAt)
-        BE-->>FE: Set-Cookie session_id (HttpOnly)
-    end
+The first signed-up user is automatically promoted to `ADMIN` so the system can bootstrap itself in local development.
 
-    BE-->>FE: Redirect to Frontend (/)
+## Data Model
 
-    Note over FE,BE: STEP 4 — Authenticated State
+### User
 
-    FE->>BE: GET /api/user/me (with cookie)
-    BE->>DB: Find Session(session_id)
-    
-    alt Valid Session
-        DB-->>BE: Session + User
-        BE-->>FE: Return User JSON
-    else Expired / Invalid
-        BE-->>FE: 401 Unauthorized
-    end
+- `email`
+- `name`
+- `role`
+- `status`
+
+### FinancialRecord
+
+- `amount`
+- `type` as `INCOME` or `EXPENSE`
+- `category`
+- `entryDate`
+- `notes`
+- `createdById`
+
+Amounts are stored as integer smallest units for simplicity.
+
+## API Overview
+
+### Auth
+
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+
+### Users
+
+- `GET /api/users/me`
+- `GET /api/users` admin only
+- `POST /api/users` admin only
+- `PATCH /api/users/:userId` admin only
+
+### Records
+
+- `GET /api/records` admin and analyst
+- `GET /api/records/:recordId` admin and analyst
+- `POST /api/records` admin only
+- `PATCH /api/records/:recordId` admin only
+- `DELETE /api/records/:recordId` admin only
+
+Supported record filters on `GET /api/records`:
+
+- `type`
+- `category`
+- `from`
+- `to`
+- `search`
+- `page`
+- `pageSize`
+
+### Dashboard
+
+- `GET /api/dashboard/summary` viewer, analyst, and admin
+- `GET /api/dashboard/trends?period=monthly|weekly` viewer, analyst, and admin
+
+Supported dashboard filters:
+
+- `type`
+- `category`
+- `from`
+- `to`
+- `search`
+
+## Local Setup
+
+### 1. Start PostgreSQL
+
+```bash
+docker compose up -d
 ```
 
+### 2. Configure environment files
 
+Create env files from the examples:
 
-## Transaction Architecture
+- [`.env.example`](/home/sid/work/OpenLedger/.env.example)
+- [`backend/shared/db/.env.example`](/home/sid/work/OpenLedger/backend/shared/db/.env.example)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant UA_FE as User App Frontend
-    participant UA_BE as User App Backend
-    participant DB as Database
-    participant Bank_API as Bank API
-    participant Bank_FE as Bank Frontend
-    participant Webhook as Webhook Handler
+### 3. Install dependencies
 
-    Note over User, Bank_API: STEP 1: REGISTRATION (The Handshake)
-    User->>UA_FE: Enters 100 and Clicks Add
-    UA_FE->>UA_BE: POST /api/deposit { amount: 100 }
-    
-    rect rgb(30, 30, 30)
-        Note right of UA_BE: Secure Server-to-Server Pre-Check
-        UA_BE->>UA_BE: Generate internal ID: txn_123
-        UA_BE->>Bank_API: POST /api/bank/create-order { ref: txn_123, amount: 100 }
-        Bank_API-->>UA_BE: Returns { bank_token: bank_session_999 }
-        UA_BE->>DB: INSERT Processing (txn_123, bank_session_999)
-    end
-    
-    UA_BE-->>UA_FE: Return { url: bank.com?token=bank_session_999 }
-
-    Note over User, Bank_FE: STEP 2: USER INTERACTION
-    UA_FE->>Bank_FE: Redirects User with bank_session_999
-    Note right of Bank_FE: Bank knows session_999 is 100
-    User->>Bank_FE: Clicks Approve
-    
-    Note over Bank_API, Webhook: STEP 3: ASYNC SETTLEMENT
-    
-    par Parallel Execution
-        rect rgb(40, 44, 52)
-            Note right of Webhook: The Invisible Webhook
-            Bank_FE->>Bank_API: Submit Approval
-            Bank_API->>Webhook: POST /webhook { token: bank_session_999, status: SUCCESS }
-            Webhook->>DB: UPDATE txn set status=Success
-            Webhook->>DB: UPDATE Balance set amount+=100
-            Webhook-->>Bank_API: 200 OK
-        end
-        and
-        rect rgb(20, 20, 20)
-            Note right of UA_FE: The User Experience
-            Bank_API-->>Bank_FE: Transaction Complete
-            Bank_FE->>UA_FE: Redirect to /dashboard
-            UA_FE->>UA_BE: GET /balance
-            UA_BE-->>UA_FE: Show Updated Balance
-        end
-    end
+```bash
+npm install
 ```
 
+### 4. Generate Prisma client and apply migrations
 
-## Spend / Withdraw Architecture
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant FE as User App Frontend
-    participant BE as User App Backend
-    participant DB as Database
-    participant Assets as Inbuilt Asset Catalog
-    participant Bank as Bank Settlement
-
-    Note over User,BE: STEP 1: Outflow Action
-    User->>FE: Chooses Withdraw or Buy Asset
-
-    alt Withdraw to Bank
-        FE->>BE: POST /api/withdraw { amount }
-        BE->>DB: Check account balance >= amount
-        BE->>DB: INSERT Transaction(type=WITHDRAW, status=PENDING)
-        BE->>DB: UPDATE Account balance -= amount
-        BE->>Bank: POST /api/bank/withdraw { ref, amount }
-        alt Bank accepts
-            Bank-->>BE: accepted + bank_reference
-            BE->>DB: UPDATE Transaction status=SUCCESS
-            BE-->>FE: Return updated balance
-            FE-->>User: Show successful withdrawal
-        else Bank fails
-            Bank-->>BE: reject/error
-            BE->>DB: UPDATE Transaction status=FAILED
-            BE->>DB: Refund balance += amount
-            BE-->>FE: Return failure
-            FE-->>User: Show withdrawal failed
-        end
-    else Buy Inbuilt Asset
-        FE->>BE: GET /api/assets/catalog
-        BE-->>FE: Return inbuilt assets
-        User->>FE: Clicks Buy on asset
-        FE->>BE: POST /api/assets/buy { assetId }
-        BE->>Assets: Resolve price + metadata
-        BE->>DB: Check account balance >= price
-        BE->>DB: INSERT Transaction(type=TRANSFER_OUT, status=SUCCESS)
-        BE->>DB: INSERT AssetPurchase(userId, assetId, transactionId)
-        BE->>DB: UPDATE Account balance -= price
-        BE-->>FE: Return purchase + updated balance
-        FE-->>User: Show owned asset + new balance
-    end
+```bash
+npm --workspace backend/shared/db run prisma:generate
+npm --workspace backend/shared/db run prisma:migrate
 ```
+
+### 5. Start the backend
+
+```bash
+npm --workspace backend/api run dev
+```
+
+The API runs on `http://localhost:4000`.
+
+## Example Requests
+
+### Create a user
+
+```bash
+curl -X POST http://localhost:4000/api/users \
+  -H "Content-Type: application/json" \
+  -b "session_id=YOUR_ADMIN_SESSION" \
+  -d '{
+    "email": "analyst@example.com",
+    "password": "strongpass123",
+    "name": "Finance Analyst",
+    "role": "ANALYST",
+    "status": "ACTIVE"
+  }'
+```
+
+### Create a financial record
+
+```bash
+curl -X POST http://localhost:4000/api/records \
+  -H "Content-Type: application/json" \
+  -b "session_id=YOUR_ADMIN_SESSION" \
+  -d '{
+    "amount": "125000",
+    "type": "INCOME",
+    "category": "Consulting",
+    "entryDate": "2026-04-01T00:00:00.000Z",
+    "notes": "April consulting invoice"
+  }'
+```
+
+### Fetch dashboard summary
+
+```bash
+curl http://localhost:4000/api/dashboard/summary?from=2026-01-01&to=2026-12-31 \
+  -b "session_id=YOUR_SESSION"
+```
+
+## Validation and Access Rules
+
+- inactive users cannot authenticate or use protected routes
+- only admins can create or manage users
+- only admins can create, update, or delete financial records
+- analysts can read records but cannot mutate them
+- viewers are limited to summary endpoints
+- the system prevents removing or deactivating the last active admin
+
+## Assumptions and Tradeoffs
+
+- email and password authentication is the primary path for the assessment
+- Google OAuth remains in the codebase from the original project, but it is optional
+- amounts use integer smallest units instead of decimals to keep arithmetic explicit
+- record trend aggregation is computed in application logic for clarity
+- legacy wallet and asset flows from the original repo are still present in source, but the assignment-relevant API surface is the one documented above
+
+## Verification
+
+Verified locally on this branch:
+
+- `npm --workspace backend/shared/db run prisma:generate`
+- `npm --workspace backend/api run build`
+- `npm --workspace backend/bank-api run build`
+
+The full repo `npm run build` is blocked in this environment by Next.js font fetching from Google Fonts, which is unrelated to the backend assignment.
