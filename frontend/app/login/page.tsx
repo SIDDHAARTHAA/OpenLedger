@@ -4,6 +4,17 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const parseErrorMessage = (error: unknown, fallback: string) => {
+    if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.error;
+        if (typeof message === "string" && message.length > 0) {
+            return message;
+        }
+    }
+
+    return fallback;
+};
+
 export default function LoginPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -45,7 +56,7 @@ export default function LoginPage() {
             router.push("/me");
         } catch (error) {
             console.error("Login failed", error);
-            alert("Login failed. Please check your credentials.");
+            alert(parseErrorMessage(error, "Login failed. Please check your credentials."));
         } finally {
             setLoading(false);
         }

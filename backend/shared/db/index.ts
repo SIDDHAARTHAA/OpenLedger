@@ -8,7 +8,14 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-config({ path: resolve(__dirname, '.env') });
+config({ path: resolve(process.cwd(), '.env') });
+config({ path: resolve(__dirname, '.env'), override: false });
+
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    'DATABASE_URL is not set. Add it to the project root .env or backend/shared/db/.env before starting the API.'
+  );
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClientType;

@@ -4,6 +4,17 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const parseErrorMessage = (error: unknown, fallback: string) => {
+    if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.error;
+        if (typeof message === "string" && message.length > 0) {
+            return message;
+        }
+    }
+
+    return fallback;
+};
+
 export default function SignupPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -46,7 +57,7 @@ export default function SignupPage() {
             router.push("/me");
         } catch (error) {
             console.error("Signup failed", error);
-            alert("Signup failed. Please check your details.");
+            alert(parseErrorMessage(error, "Signup failed. Please check your details."));
         } finally {
             setLoading(false);
         }
