@@ -59,7 +59,7 @@ Amounts are stored as integer smallest units for simplicity.
 
 ## API Overview
 
-Static GitHub Pages documentation is also included under [`docs/`](./docs/) for easy public hosting.
+Static GitHub Pages documentation is included under [`docs/`](./docs/) for easy public hosting.
 
 ### Auth
 
@@ -141,14 +141,6 @@ npm --workspace backend/api run dev
 
 The API runs on `http://localhost:4000`.
 
-### 6. Seed sample records
-
-```bash
-npm --workspace backend/shared/db run seed:dashboard
-```
-
-This inserts a handful of income and expense entries for the first active admin user without duplicating existing seed records.
-
 ## Example Requests
 
 ### Create a user
@@ -221,7 +213,6 @@ To publish it with GitHub Pages:
 - Google OAuth is included as an optional enhancement on top of email/password auth
 - amounts use integer smallest units instead of decimals to keep arithmetic explicit
 - record trend aggregation is computed in application logic for clarity
-- sample seed data is included to make dashboard totals and trends easier to review quickly
 
 ## Verification
 
@@ -229,5 +220,4 @@ Verified locally on this branch:
 
 - `npm --workspace backend/shared/db run prisma:generate`
 - `npm --workspace backend/shared/db run prisma:migrate`
-- `npm --workspace backend/shared/db run seed:dashboard`
 - `npm --workspace backend/api run build`
