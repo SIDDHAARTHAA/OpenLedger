@@ -37,7 +37,7 @@ The first signed-up user is automatically promoted to `ADMIN` so the system can 
 
 ## Data Model
 
-![Prisma schema diagram](./prisma_schema_design.svg)
+![Prisma schema diagram](./prisma_schema_design.png)
 
 ### User
 
