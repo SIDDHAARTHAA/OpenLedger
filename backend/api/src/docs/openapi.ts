@@ -1,5 +1,3 @@
-const apiBaseUrl = process.env.API_PUBLIC_URL ?? "http://localhost:4000";
-
 export const openApiSpec = {
   openapi: "3.1.0",
   info: {
@@ -8,12 +6,6 @@ export const openApiSpec = {
     description:
       "Backend APIs for role-based finance records, dashboard summaries, and user management.",
   },
-  servers: [
-    {
-      url: `${apiBaseUrl}/api`,
-      description: "Local development server",
-    },
-  ],
   tags: [
     { name: "Auth" },
     { name: "Users" },
@@ -29,13 +21,6 @@ export const openApiSpec = {
       },
     },
     schemas: {
-      ErrorResponse: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-        },
-        required: ["error"],
-      },
       User: {
         type: "object",
         properties: {

@@ -59,8 +59,6 @@ Amounts are stored as integer smallest units for simplicity.
 
 ## API Overview
 
-Machine-readable docs are available at `GET /api/docs.json`, and a lightweight browser page is available at `GET /api/docs`.
-
 Static GitHub Pages documentation is also included under [`docs/`](./docs/) for easy public hosting.
 
 ### Auth
@@ -193,7 +191,7 @@ curl http://localhost:4000/api/dashboard/summary?from=2026-01-01&to=2026-12-31 \
 ### OpenAPI documentation
 
 ```bash
-curl http://localhost:4000/api/docs.json
+cat docs/openapi.json
 ```
 
 ### GitHub Pages docs
