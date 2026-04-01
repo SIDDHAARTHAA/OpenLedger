@@ -24,3 +24,23 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.app-panel {
+  @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm;
+}
+
+.app-input {
+  @apply w-full rounded-xl bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF];
+}
+
+.app-button-primary {
+  @apply rounded-xl bg-[#00B5EF] px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.app-button-secondary {
+  @apply rounded-xl border border-[#00B5EF] px-6 py-3 text-sm text-[#00B5EF] transition-colors hover:bg-[#00B5EF]/10 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.app-button-ghost {
+  @apply rounded-xl border border-white/20 px-4 py-2 text-sm text-white transition-colors hover:bg-white/10;
+}

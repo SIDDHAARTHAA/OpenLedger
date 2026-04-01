@@ -1,5 +1,11 @@
 # Zorvyn Finance Data Processing and Access Control Backend
 
+[![Node.js](https://img.shields.io/badge/Node.js-22-2f855a?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5-111827?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-1f2937?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-1d4ed8?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-2563eb?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
 This branch adapts the existing repo into a backend assignment for a finance dashboard system with role-based access control.
 
 The backend now focuses on:
@@ -31,6 +37,8 @@ The first signed-up user is automatically promoted to `ADMIN` so the system can 
 
 ## Data Model
 
+![Prisma schema diagram](./prisma_schema_design.png)
+
 ### User
 
 - `email`
@@ -50,6 +58,8 @@ The first signed-up user is automatically promoted to `ADMIN` so the system can 
 Amounts are stored as integer smallest units for simplicity.
 
 ## API Overview
+
+Machine-readable docs are available at `GET /api/docs.json`, and a lightweight browser page is available at `GET /api/docs`.
 
 ### Auth
 
@@ -131,6 +141,14 @@ npm --workspace backend/api run dev
 
 The API runs on `http://localhost:4000`.
 
+### 6. Seed sample records
+
+```bash
+npm --workspace backend/shared/db run seed:dashboard
+```
+
+This inserts a handful of income and expense entries for the first active admin user without duplicating existing seed records.
+
 ## Example Requests
 
 ### Create a user
@@ -170,6 +188,12 @@ curl http://localhost:4000/api/dashboard/summary?from=2026-01-01&to=2026-12-31 \
   -b "session_id=YOUR_SESSION"
 ```
 
+### OpenAPI documentation
+
+```bash
+curl http://localhost:4000/api/docs.json
+```
+
 ## Validation and Access Rules
 
 - inactive users cannot authenticate or use protected routes
@@ -192,7 +216,6 @@ curl http://localhost:4000/api/dashboard/summary?from=2026-01-01&to=2026-12-31 \
 Verified locally on this branch:
 
 - `npm --workspace backend/shared/db run prisma:generate`
+- `npm --workspace backend/shared/db run seed:dashboard`
 - `npm --workspace backend/api run build`
 - `npm --workspace backend/bank-api run build`
-
-The full repo `npm run build` is blocked in this environment by Next.js font fetching from Google Fonts, which is unrelated to the backend assignment.

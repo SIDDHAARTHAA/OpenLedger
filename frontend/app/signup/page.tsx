@@ -49,7 +49,7 @@ export default function SignupPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center px-6">
-            <div className="w-full max-w-sm border border-white/10 p-8">
+            <div className="app-panel w-full max-w-sm p-8">
                 <h2 className="text-2xl font-semibold mb-6 font-[var(--font-plex)]">
                     Create account
                 </h2>
@@ -57,7 +57,7 @@ export default function SignupPage() {
                 {/* Google signup */}
                 <button
                     onClick={handleGoogleSignup}
-                    className="block w-full text-center py-3 bg-[#00B5EF] text-black text-sm font-medium mb-6 hover:opacity-90 transition-opacity"
+                    className="app-button-primary mb-6 block w-full text-center"
                 >
                     Sign up with Google
                 </button>
@@ -73,7 +73,7 @@ export default function SignupPage() {
                         placeholder="Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
+                        className="app-input"
                         required
                     />
                     <input
@@ -81,7 +81,7 @@ export default function SignupPage() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
+                        className="app-input"
                         required
                     />
                     <input
@@ -89,14 +89,14 @@ export default function SignupPage() {
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-transparent border border-white/20 px-4 py-3 text-sm outline-none focus:border-[#00B5EF]"
+                        className="app-input"
                         required
                     />
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 border border-[#00B5EF] text-[#00B5EF] text-sm hover:bg-[#00B5EF]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="app-button-secondary flex w-full items-center justify-center"
                     >
                         {loading ? (
                             <div className="w-5 h-5 border-2 border-[#00B5EF] border-t-transparent rounded-full animate-spin"></div>

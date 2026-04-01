@@ -52,13 +52,13 @@ export default function HomePage() {
         <div className="mt-10 flex gap-4">
           <Link
             href="/signup"
-            className="px-6 py-3 bg-[#00B5EF] text-black text-sm font-medium"
+            className="app-button-primary"
           >
             Get started
           </Link>
           <Link
             href="/login"
-            className="px-6 py-3 border border-[#00B5EF] text-[#00B5EF] text-sm"
+            className="app-button-secondary"
           >
             Login
           </Link>

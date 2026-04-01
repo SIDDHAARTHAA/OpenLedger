@@ -10,7 +10,8 @@
   "type": "module",
   "scripts": {
     "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "seed:dashboard": "tsx scripts/seed-dashboard.ts"
   },
   "devDependencies": {
     "@types/node": "^25.2.2",
