@@ -22,6 +22,8 @@ export const getMe = async (req: Request, res: Response) => {
                     email: true,
                     name: true,
                     image: true,
+                    role: true,
+                    status: true,
                     createdAt: true,
                 },
             },

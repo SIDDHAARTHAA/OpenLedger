@@ -4,6 +4,11 @@ import { type Request, type Response } from "express";
 import crypto from "node:crypto"
 import bcrypt from 'bcrypt'
 
+const getBootstrapRole = async () => {
+    const existingUsers = await db.user.count();
+    return existingUsers === 0 ? "ADMIN" : "VIEWER";
+};
+
 export const authGoogleStart = (req: Request, res: Response) => {
     const params = new URLSearchParams({
         client_id: process.env.GOOGLE_CLIENT_ID!,
@@ -66,6 +71,7 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
 
 
         //db transaction: user + auth account
+        const bootstrapRole = await getBootstrapRole();
         const user = await db.$transaction(async (tx) => {
             const existingAccount = await tx.authAccount.findUnique({
                 where: {
@@ -86,6 +92,7 @@ export const authGoogleCallback = async (req: Request, res: Response) => {
                     email: email ?? null,
                     name: name ?? null,
                     image: picture ?? null,
+                    role: bootstrapRole,
                     authAccounts: {
                         create: {
                             provider: "GOOGLE",
@@ -156,6 +163,12 @@ export const emailLogin = async (req: Request, res: Response) => {
         });
     }
 
+    if (account.user.status !== "ACTIVE") {
+        return res.status(403).json({
+            error: "User account is inactive"
+        });
+    }
+
     const valid = await bcrypt.compare(password, account.passwordHash);
 
     if (!valid) {
@@ -206,11 +219,13 @@ export const emailSignup = async (req: Request, res: Response) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const bootstrapRole = await getBootstrapRole();
 
     const user = await db.user.create({
         data: {
             email,
             name: name ?? null,
+            role: bootstrapRole,
             authAccounts: {
                 create: {
                     provider: "EMAIL",
@@ -241,5 +256,5 @@ export const emailSignup = async (req: Request, res: Response) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.json({ user });
+    return res.status(201).json({ user });
 };

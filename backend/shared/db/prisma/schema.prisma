@@ -11,6 +11,17 @@ enum AuthProvider {
   EMAIL
 }
 
+enum UserRole {
+  VIEWER
+  ANALYST
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum TransactionType {
   DEPOSIT
   WITHDRAW
@@ -24,9 +35,16 @@ enum TransactionStatus {
   FAILED
 }
 
+enum FinancialRecordType {
+  INCOME
+  EXPENSE
+}
+
 model User {
-  id    String  @id @default(cuid())
-  email String? @unique
+  id     String     @id @default(cuid())
+  email  String?    @unique
+  role   UserRole   @default(VIEWER)
+  status UserStatus @default(ACTIVE)
 
   name  String?
   image String?
@@ -35,6 +53,7 @@ model User {
   sessions     Session[]
   account      Account?
   assetPurchases AssetPurchase[]
+  createdFinancialRecords FinancialRecord[] @relation("CreatedFinancialRecords")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -122,4 +141,23 @@ model AssetPurchase {
 
   @@unique([userId, assetId])
   @@index([userId, createdAt])
+}
+
+model FinancialRecord {
+  id          String              @id @default(cuid())
+  createdById String
+  amount      BigInt
+  type        FinancialRecordType
+  category    String
+  entryDate   DateTime
+  notes       String?
+
+  createdBy User @relation("CreatedFinancialRecords", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById, createdAt])
+  @@index([type, entryDate])
+  @@index([category, entryDate])
 }
